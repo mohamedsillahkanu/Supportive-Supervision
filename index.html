@@ -1,16 +1,39 @@
-<!DOCTYPE html>   
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Malaria Supportive Supervision Checklist - Sierra Leone</title>
     <link rel="stylesheet" href="styles.css">
-    <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
+    <!-- LOGIN PAGE -->
+    <div class="login-container" id="loginContainer">
+        <div class="login-card">
+            <div class="login-header">
+                <img src="https://github.com/mohamedsillahkanu/gdp-dashboard-2/raw/6c7463b0d5c3be150aafae695a4bcbbd8aeb1499/ICF-SL.jpg" alt="NMCP Logo">
+                <h2>Malaria Supportive Supervision</h2>
+                <p>National Malaria Control Programme - Sierra Leone</p>
+            </div>
+            <div class="login-body">
+                <div class="login-error" id="loginError"></div>
+                <form id="loginForm">
+                    <div class="login-group">
+                        <label class="login-label">USERNAME</label>
+                        <input type="text" class="login-input" id="username" placeholder="Enter username" required>
+                    </div>
+                    <div class="login-group">
+                        <label class="login-label">PASSWORD</label>
+                        <input type="password" class="login-input" id="password" placeholder="Enter password" required>
+                    </div>
+                    <button type="submit" class="login-btn">LOGIN</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- MAIN CONTENT -->
-    <div class="main-content show" id="mainContent">
+    <div class="main-content" id="mainContent">
         <div class="page-container">
             <!-- HEADER -->
             <div class="page-header">
@@ -23,9 +46,9 @@
 
             <!-- CONTROLS -->
             <div class="controls-bar">
-                <button class="control-btn" id="viewDataBtn">📊 VIEW DATA</button>
-                <button class="control-btn" id="viewAnalysisBtn">📈 VIEW ANALYSIS</button>
+                <button class="control-btn" id="newFormBtn">📋 NEW FORM</button>
                 <button class="control-btn draft-btn" id="viewDraftsBtn">📝 VIEW DRAFTS</button>
+                <button class="control-btn" id="viewAnalysisBtn">📈 ANALYSIS</button>
             </div>
 
             <!-- STATUS BAR -->
@@ -35,11 +58,11 @@
                     <span class="status-text" id="statusText">CHECKING...</span>
                 </div>
                 <div class="status-item">
-                    <span style="color: #000000; font-size: 12px;">DRAFTS:</span>
+                    <span style="font-size: 12px;">DRAFTS:</span>
                     <span class="draft-count" id="draftCount">0</span>
                 </div>
                 <div class="status-item">
-                    <span style="color: #000000; font-size: 12px;">PENDING:</span>
+                    <span style="font-size: 12px;">PENDING:</span>
                     <span class="pending-count" id="pendingCount">0</span>
                 </div>
             </div>
@@ -48,24 +71,768 @@
             <div class="form-card">
                 <div class="form-content">
                     <div class="progress-bar">
-                        <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+                        <div class="progress-fill" id="progressFill" style="width: 10%"></div>
                     </div>
-                    <div class="progress-text" id="progressText">SECTION 1 OF 10 <span id="formStatusBadge"></span></div>
+                    <div class="progress-text" id="progressText">Section 1 of 10 <span id="formStatusBadge" class="draft">DRAFT</span></div>
 
-                    <form id="dataForm">
-                        <input type="hidden" name="form_status" id="form_status" value="draft">
-                        <input type="hidden" name="draft_id" id="draft_id" value="">
-                        <div id="dynamicSections"></div>
+                    <form id="supervisionForm">
+                        <!-- SECTION 1: Facility Information -->
+                        <div class="form-section active" id="section1">
+                            <div class="section-header">
+                                <div class="section-number">SECTION 1 OF 10</div>
+                                <div class="section-title">FACILITY IDENTIFICATION</div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label required">Region</label>
+                                <select class="form-select" id="region" name="region" required>
+                                    <option value="">-- Select Region --</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label required">District</label>
+                                <select class="form-select" id="district" name="district" required>
+                                    <option value="">-- Select District --</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label required">Chiefdom</label>
+                                <select class="form-select" id="chiefdom" name="chiefdom" required>
+                                    <option value="">-- Select Chiefdom --</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label required">Health Facility Name</label>
+                                <select class="form-select" id="facilityName" name="facilityName" required>
+                                    <option value="">-- Select Health Facility --</option>
+                                </select>
+                                <input type="hidden" id="facilityId" name="facilityId">
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label required">Facility Type</label>
+                                <select class="form-select" id="facilityType" name="facilityType" required>
+                                    <option value="">-- Select Facility Type --</option>
+                                    <option value="Hospital">Hospital</option>
+                                    <option value="CHC">Community Health Centre (CHC)</option>
+                                    <option value="CHP">Community Health Post (CHP)</option>
+                                    <option value="MCHP">Maternal and Child Health Post (MCHP)</option>
+                                    <option value="Private Clinic">Private Clinic</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label required">Date of Visit</label>
+                                <input type="date" class="form-input" id="visitDate" name="visitDate" required>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">GPS Coordinates</label>
+                                <div class="gps-display">
+                                    <p>Latitude: <span class="gps-coords" id="gpsLatitude">--</span></p>
+                                    <p>Longitude: <span class="gps-coords" id="gpsLongitude">--</span></p>
+                                    <p>Accuracy: <span class="gps-coords" id="gpsAccuracy">--</span></p>
+                                </div>
+                                <button type="button" class="photo-btn capture" id="refreshGpsBtn">🔄 Refresh GPS</button>
+                            </div>
+
+                            <div class="nav-buttons">
+                                <button type="button" class="nav-btn draft" data-action="draft">💾 SAVE DRAFT</button>
+                                <button type="button" class="nav-btn next" data-action="next">NEXT →</button>
+                            </div>
+                        </div>
+
+                        <!-- SECTION 2: Supervision Team -->
+                        <div class="form-section" id="section2">
+                            <div class="section-header">
+                                <div class="section-number">SECTION 2 OF 10</div>
+                                <div class="section-title">SUPERVISION TEAM</div>
+                            </div>
+
+                            <div class="supervisor-entry">
+                                <h4>Supervisor 1</h4>
+                                <div class="entry-grid">
+                                    <div class="form-group">
+                                        <label class="form-label required">Name</label>
+                                        <input type="text" class="form-input" name="supervisor1Name" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label required">Designation</label>
+                                        <input type="text" class="form-input" name="supervisor1Designation" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Phone Number</label>
+                                        <input type="tel" class="form-input" name="supervisor1Phone">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Organization</label>
+                                        <input type="text" class="form-input" name="supervisor1Org">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="supervisor-entry">
+                                <h4>Supervisor 2 (Optional)</h4>
+                                <div class="entry-grid">
+                                    <div class="form-group">
+                                        <label class="form-label">Name</label>
+                                        <input type="text" class="form-input" name="supervisor2Name">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Designation</label>
+                                        <input type="text" class="form-input" name="supervisor2Designation">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Phone Number</label>
+                                        <input type="tel" class="form-input" name="supervisor2Phone">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Organization</label>
+                                        <input type="text" class="form-input" name="supervisor2Org">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="supervisor-entry">
+                                <h4>Supervisor 3 (Optional)</h4>
+                                <div class="entry-grid">
+                                    <div class="form-group">
+                                        <label class="form-label">Name</label>
+                                        <input type="text" class="form-input" name="supervisor3Name">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Designation</label>
+                                        <input type="text" class="form-input" name="supervisor3Designation">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Phone Number</label>
+                                        <input type="tel" class="form-input" name="supervisor3Phone">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Organization</label>
+                                        <input type="text" class="form-input" name="supervisor3Org">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="nav-buttons">
+                                <button type="button" class="nav-btn back" data-action="back">← BACK</button>
+                                <button type="button" class="nav-btn draft" data-action="draft">💾 SAVE DRAFT</button>
+                                <button type="button" class="nav-btn next" data-action="next">NEXT →</button>
+                            </div>
+                        </div>
+
+                        <!-- SECTION 3: Case Management -->
+                        <div class="form-section" id="section3">
+                            <div class="section-header">
+                                <div class="section-number">SECTION 3 OF 10</div>
+                                <div class="section-title">CASE MANAGEMENT</div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label required">Are malaria case management guidelines available?</label>
+                                <div class="radio-group">
+                                    <div class="radio-item">
+                                        <input type="radio" id="guidelinesYes" name="guidelinesAvailable" value="Yes" required>
+                                        <label for="guidelinesYes">Yes</label>
+                                    </div>
+                                    <div class="radio-item">
+                                        <input type="radio" id="guidelinesNo" name="guidelinesAvailable" value="No">
+                                        <label for="guidelinesNo">No</label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label required">Are RDTs available and in stock?</label>
+                                <div class="radio-group">
+                                    <div class="radio-item">
+                                        <input type="radio" id="rdtYes" name="rdtAvailable" value="Yes" required>
+                                        <label for="rdtYes">Yes</label>
+                                    </div>
+                                    <div class="radio-item">
+                                        <input type="radio" id="rdtNo" name="rdtAvailable" value="No">
+                                        <label for="rdtNo">No</label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">RDT Stock Count (if available)</label>
+                                <input type="number" class="form-input" name="rdtStockCount" min="0">
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label required">Are ACTs available and in stock?</label>
+                                <div class="radio-group">
+                                    <div class="radio-item">
+                                        <input type="radio" id="actYes" name="actAvailable" value="Yes" required>
+                                        <label for="actYes">Yes</label>
+                                    </div>
+                                    <div class="radio-item">
+                                        <input type="radio" id="actNo" name="actAvailable" value="No">
+                                        <label for="actNo">No</label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label required">Is the health worker trained in malaria case management?</label>
+                                <div class="radio-group">
+                                    <div class="radio-item">
+                                        <input type="radio" id="trainedYes" name="hwTrained" value="Yes" required>
+                                        <label for="trainedYes">Yes</label>
+                                    </div>
+                                    <div class="radio-item">
+                                        <input type="radio" id="trainedNo" name="hwTrained" value="No">
+                                        <label for="trainedNo">No</label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label required">Are all suspected malaria cases tested before treatment?</label>
+                                <div class="radio-group">
+                                    <div class="radio-item">
+                                        <input type="radio" id="testedYes" name="casesTested" value="Yes" required>
+                                        <label for="testedYes">Yes</label>
+                                    </div>
+                                    <div class="radio-item">
+                                        <input type="radio" id="testedNo" name="casesTested" value="No">
+                                        <label for="testedNo">No</label>
+                                    </div>
+                                    <div class="radio-item">
+                                        <input type="radio" id="testedPartially" name="casesTested" value="Partially">
+                                        <label for="testedPartially">Partially</label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="nav-buttons">
+                                <button type="button" class="nav-btn back" data-action="back">← BACK</button>
+                                <button type="button" class="nav-btn draft" data-action="draft">💾 SAVE DRAFT</button>
+                                <button type="button" class="nav-btn next" data-action="next">NEXT →</button>
+                            </div>
+                        </div>
+
+                        <!-- SECTION 4: Stock Management -->
+                        <div class="form-section" id="section4">
+                            <div class="section-header">
+                                <div class="section-number">SECTION 4 OF 10</div>
+                                <div class="section-title">STOCK MANAGEMENT</div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label required">Is there a stock card/register for malaria commodities?</label>
+                                <div class="radio-group">
+                                    <div class="radio-item">
+                                        <input type="radio" id="stockCardYes" name="stockCard" value="Yes" required>
+                                        <label for="stockCardYes">Yes</label>
+                                    </div>
+                                    <div class="radio-item">
+                                        <input type="radio" id="stockCardNo" name="stockCard" value="No">
+                                        <label for="stockCardNo">No</label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label required">Are stock cards up to date?</label>
+                                <div class="radio-group">
+                                    <div class="radio-item">
+                                        <input type="radio" id="stockUpToDateYes" name="stockUpToDate" value="Yes" required>
+                                        <label for="stockUpToDateYes">Yes</label>
+                                    </div>
+                                    <div class="radio-item">
+                                        <input type="radio" id="stockUpToDateNo" name="stockUpToDate" value="No">
+                                        <label for="stockUpToDateNo">No</label>
+                                    </div>
+                                    <div class="radio-item">
+                                        <input type="radio" id="stockUpToDateNA" name="stockUpToDate" value="N/A">
+                                        <label for="stockUpToDateNA">N/A</label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Any stockouts in the last 3 months? (Select all that apply)</label>
+                                <div class="checkbox-group">
+                                    <div class="checkbox-item">
+                                        <input type="checkbox" id="stockoutRDT" name="stockouts" value="RDT">
+                                        <label for="stockoutRDT">RDT</label>
+                                    </div>
+                                    <div class="checkbox-item">
+                                        <input type="checkbox" id="stockoutACT" name="stockouts" value="ACT">
+                                        <label for="stockoutACT">ACT</label>
+                                    </div>
+                                    <div class="checkbox-item">
+                                        <input type="checkbox" id="stockoutSP" name="stockouts" value="SP">
+                                        <label for="stockoutSP">SP (IPTp)</label>
+                                    </div>
+                                    <div class="checkbox-item">
+                                        <input type="checkbox" id="stockoutLLIN" name="stockouts" value="LLIN">
+                                        <label for="stockoutLLIN">LLIN</label>
+                                    </div>
+                                    <div class="checkbox-item">
+                                        <input type="checkbox" id="stockoutNone" name="stockouts" value="None">
+                                        <label for="stockoutNone">No Stockouts</label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Comments on Stock Management</label>
+                                <textarea class="form-textarea" name="stockComments" placeholder="Enter any observations or comments..."></textarea>
+                            </div>
+
+                            <div class="nav-buttons">
+                                <button type="button" class="nav-btn back" data-action="back">← BACK</button>
+                                <button type="button" class="nav-btn draft" data-action="draft">💾 SAVE DRAFT</button>
+                                <button type="button" class="nav-btn next" data-action="next">NEXT →</button>
+                            </div>
+                        </div>
+
+                        <!-- SECTION 5: Data Quality -->
+                        <div class="form-section" id="section5">
+                            <div class="section-header">
+                                <div class="section-number">SECTION 5 OF 10</div>
+                                <div class="section-title">DATA QUALITY & REPORTING</div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label required">Are malaria registers available and in use?</label>
+                                <div class="radio-group">
+                                    <div class="radio-item">
+                                        <input type="radio" id="registerYes" name="registerAvailable" value="Yes" required>
+                                        <label for="registerYes">Yes</label>
+                                    </div>
+                                    <div class="radio-item">
+                                        <input type="radio" id="registerNo" name="registerAvailable" value="No">
+                                        <label for="registerNo">No</label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label required">Are registers completely filled?</label>
+                                <div class="radio-group">
+                                    <div class="radio-item">
+                                        <input type="radio" id="registerCompleteYes" name="registerComplete" value="Yes" required>
+                                        <label for="registerCompleteYes">Yes</label>
+                                    </div>
+                                    <div class="radio-item">
+                                        <input type="radio" id="registerCompleteNo" name="registerComplete" value="No">
+                                        <label for="registerCompleteNo">No</label>
+                                    </div>
+                                    <div class="radio-item">
+                                        <input type="radio" id="registerCompletePartial" name="registerComplete" value="Partially">
+                                        <label for="registerCompletePartial">Partially</label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label required">Are DHIS2 reports submitted on time?</label>
+                                <div class="radio-group">
+                                    <div class="radio-item">
+                                        <input type="radio" id="dhis2Yes" name="dhis2OnTime" value="Yes" required>
+                                        <label for="dhis2Yes">Yes</label>
+                                    </div>
+                                    <div class="radio-item">
+                                        <input type="radio" id="dhis2No" name="dhis2OnTime" value="No">
+                                        <label for="dhis2No">No</label>
+                                    </div>
+                                    <div class="radio-item">
+                                        <input type="radio" id="dhis2Sometimes" name="dhis2OnTime" value="Sometimes">
+                                        <label for="dhis2Sometimes">Sometimes</label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label required">Is there consistency between register data and reported data?</label>
+                                <div class="radio-group">
+                                    <div class="radio-item">
+                                        <input type="radio" id="consistencyYes" name="dataConsistency" value="Yes" required>
+                                        <label for="consistencyYes">Yes</label>
+                                    </div>
+                                    <div class="radio-item">
+                                        <input type="radio" id="consistencyNo" name="dataConsistency" value="No">
+                                        <label for="consistencyNo">No</label>
+                                    </div>
+                                    <div class="radio-item">
+                                        <input type="radio" id="consistencyPartial" name="dataConsistency" value="Partially">
+                                        <label for="consistencyPartial">Partially</label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="nav-buttons">
+                                <button type="button" class="nav-btn back" data-action="back">← BACK</button>
+                                <button type="button" class="nav-btn draft" data-action="draft">💾 SAVE DRAFT</button>
+                                <button type="button" class="nav-btn next" data-action="next">NEXT →</button>
+                            </div>
+                        </div>
+
+                        <!-- SECTION 6: IPTp (Pregnant Women) -->
+                        <div class="form-section" id="section6">
+                            <div class="section-header">
+                                <div class="section-number">SECTION 6 OF 10</div>
+                                <div class="section-title">IPTp (MALARIA IN PREGNANCY)</div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label required">Does the facility provide ANC services?</label>
+                                <div class="radio-group">
+                                    <div class="radio-item">
+                                        <input type="radio" id="ancYes" name="ancServices" value="Yes" required>
+                                        <label for="ancYes">Yes</label>
+                                    </div>
+                                    <div class="radio-item">
+                                        <input type="radio" id="ancNo" name="ancServices" value="No">
+                                        <label for="ancNo">No</label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Is SP available for IPTp?</label>
+                                <div class="radio-group">
+                                    <div class="radio-item">
+                                        <input type="radio" id="spYes" name="spAvailable" value="Yes">
+                                        <label for="spYes">Yes</label>
+                                    </div>
+                                    <div class="radio-item">
+                                        <input type="radio" id="spNo" name="spAvailable" value="No">
+                                        <label for="spNo">No</label>
+                                    </div>
+                                    <div class="radio-item">
+                                        <input type="radio" id="spNA" name="spAvailable" value="N/A">
+                                        <label for="spNA">N/A</label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Is IPTp given as DOT (Directly Observed Therapy)?</label>
+                                <div class="radio-group">
+                                    <div class="radio-item">
+                                        <input type="radio" id="dotYes" name="iptpDOT" value="Yes">
+                                        <label for="dotYes">Yes</label>
+                                    </div>
+                                    <div class="radio-item">
+                                        <input type="radio" id="dotNo" name="iptpDOT" value="No">
+                                        <label for="dotNo">No</label>
+                                    </div>
+                                    <div class="radio-item">
+                                        <input type="radio" id="dotNA" name="iptpDOT" value="N/A">
+                                        <label for="dotNA">N/A</label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Are LLINs distributed to pregnant women?</label>
+                                <div class="radio-group">
+                                    <div class="radio-item">
+                                        <input type="radio" id="llinPregYes" name="llinPregnant" value="Yes">
+                                        <label for="llinPregYes">Yes</label>
+                                    </div>
+                                    <div class="radio-item">
+                                        <input type="radio" id="llinPregNo" name="llinPregnant" value="No">
+                                        <label for="llinPregNo">No</label>
+                                    </div>
+                                    <div class="radio-item">
+                                        <input type="radio" id="llinPregNA" name="llinPregnant" value="N/A">
+                                        <label for="llinPregNA">N/A</label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="nav-buttons">
+                                <button type="button" class="nav-btn back" data-action="back">← BACK</button>
+                                <button type="button" class="nav-btn draft" data-action="draft">💾 SAVE DRAFT</button>
+                                <button type="button" class="nav-btn next" data-action="next">NEXT →</button>
+                            </div>
+                        </div>
+
+                        <!-- SECTION 7: Community Case Management -->
+                        <div class="form-section" id="section7">
+                            <div class="section-header">
+                                <div class="section-number">SECTION 7 OF 10</div>
+                                <div class="section-title">COMMUNITY CASE MANAGEMENT (iCCM)</div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label required">Does the facility supervise CHWs?</label>
+                                <div class="radio-group">
+                                    <div class="radio-item">
+                                        <input type="radio" id="chwYes" name="chwSupervision" value="Yes" required>
+                                        <label for="chwYes">Yes</label>
+                                    </div>
+                                    <div class="radio-item">
+                                        <input type="radio" id="chwNo" name="chwSupervision" value="No">
+                                        <label for="chwNo">No</label>
+                                    </div>
+                                    <div class="radio-item">
+                                        <input type="radio" id="chwNA" name="chwSupervision" value="N/A">
+                                        <label for="chwNA">N/A</label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Number of active CHWs under this facility</label>
+                                <input type="number" class="form-input" name="chwCount" min="0">
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Are CHWs supplied with RDTs and ACTs?</label>
+                                <div class="radio-group">
+                                    <div class="radio-item">
+                                        <input type="radio" id="chwSuppliedYes" name="chwSupplied" value="Yes">
+                                        <label for="chwSuppliedYes">Yes</label>
+                                    </div>
+                                    <div class="radio-item">
+                                        <input type="radio" id="chwSuppliedNo" name="chwSupplied" value="No">
+                                        <label for="chwSuppliedNo">No</label>
+                                    </div>
+                                    <div class="radio-item">
+                                        <input type="radio" id="chwSuppliedNA" name="chwSupplied" value="N/A">
+                                        <label for="chwSuppliedNA">N/A</label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Do CHWs submit reports to this facility?</label>
+                                <div class="radio-group">
+                                    <div class="radio-item">
+                                        <input type="radio" id="chwReportYes" name="chwReporting" value="Yes">
+                                        <label for="chwReportYes">Yes</label>
+                                    </div>
+                                    <div class="radio-item">
+                                        <input type="radio" id="chwReportNo" name="chwReporting" value="No">
+                                        <label for="chwReportNo">No</label>
+                                    </div>
+                                    <div class="radio-item">
+                                        <input type="radio" id="chwReportNA" name="chwReporting" value="N/A">
+                                        <label for="chwReportNA">N/A</label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="nav-buttons">
+                                <button type="button" class="nav-btn back" data-action="back">← BACK</button>
+                                <button type="button" class="nav-btn draft" data-action="draft">💾 SAVE DRAFT</button>
+                                <button type="button" class="nav-btn next" data-action="next">NEXT →</button>
+                            </div>
+                        </div>
+
+                        <!-- SECTION 8: SWOT Analysis -->
+                        <div class="form-section" id="section8">
+                            <div class="section-header">
+                                <div class="section-number">SECTION 8 OF 10</div>
+                                <div class="section-title">SWOT ANALYSIS</div>
+                            </div>
+
+                            <div class="swot-grid">
+                                <div class="swot-item strength">
+                                    <h4>💪 STRENGTHS</h4>
+                                    <textarea name="swotStrengths" placeholder="List the strengths observed at this facility..."></textarea>
+                                </div>
+                                <div class="swot-item weakness">
+                                    <h4>⚠️ WEAKNESSES</h4>
+                                    <textarea name="swotWeaknesses" placeholder="List the weaknesses observed at this facility..."></textarea>
+                                </div>
+                                <div class="swot-item opportunity">
+                                    <h4>🎯 OPPORTUNITIES</h4>
+                                    <textarea name="swotOpportunities" placeholder="List potential opportunities for improvement..."></textarea>
+                                </div>
+                                <div class="swot-item threat">
+                                    <h4>🚨 THREATS</h4>
+                                    <textarea name="swotThreats" placeholder="List threats or challenges facing the facility..."></textarea>
+                                </div>
+                            </div>
+
+                            <div class="nav-buttons">
+                                <button type="button" class="nav-btn back" data-action="back">← BACK</button>
+                                <button type="button" class="nav-btn draft" data-action="draft">💾 SAVE DRAFT</button>
+                                <button type="button" class="nav-btn next" data-action="next">NEXT →</button>
+                            </div>
+                        </div>
+
+                        <!-- SECTION 9: Action Plan -->
+                        <div class="form-section" id="section9">
+                            <div class="section-header">
+                                <div class="section-number">SECTION 9 OF 10</div>
+                                <div class="section-title">ACTION PLAN</div>
+                            </div>
+
+                            <div class="action-plan-item">
+                                <h4>Action Item 1</h4>
+                                <div class="action-plan-grid">
+                                    <div class="form-group full-width">
+                                        <label class="form-label">Issue Identified</label>
+                                        <input type="text" class="form-input" name="action1Issue" placeholder="Describe the issue...">
+                                    </div>
+                                    <div class="form-group full-width">
+                                        <label class="form-label">Action Required</label>
+                                        <input type="text" class="form-input" name="action1Action" placeholder="What action should be taken?">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Person Responsible</label>
+                                        <input type="text" class="form-input" name="action1Person" placeholder="Who is responsible?">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Timeline</label>
+                                        <input type="date" class="form-input" name="action1Timeline">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="action-plan-item">
+                                <h4>Action Item 2</h4>
+                                <div class="action-plan-grid">
+                                    <div class="form-group full-width">
+                                        <label class="form-label">Issue Identified</label>
+                                        <input type="text" class="form-input" name="action2Issue" placeholder="Describe the issue...">
+                                    </div>
+                                    <div class="form-group full-width">
+                                        <label class="form-label">Action Required</label>
+                                        <input type="text" class="form-input" name="action2Action" placeholder="What action should be taken?">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Person Responsible</label>
+                                        <input type="text" class="form-input" name="action2Person" placeholder="Who is responsible?">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Timeline</label>
+                                        <input type="date" class="form-input" name="action2Timeline">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="action-plan-item">
+                                <h4>Action Item 3</h4>
+                                <div class="action-plan-grid">
+                                    <div class="form-group full-width">
+                                        <label class="form-label">Issue Identified</label>
+                                        <input type="text" class="form-input" name="action3Issue" placeholder="Describe the issue...">
+                                    </div>
+                                    <div class="form-group full-width">
+                                        <label class="form-label">Action Required</label>
+                                        <input type="text" class="form-input" name="action3Action" placeholder="What action should be taken?">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Person Responsible</label>
+                                        <input type="text" class="form-input" name="action3Person" placeholder="Who is responsible?">
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Timeline</label>
+                                        <input type="date" class="form-input" name="action3Timeline">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="nav-buttons">
+                                <button type="button" class="nav-btn back" data-action="back">← BACK</button>
+                                <button type="button" class="nav-btn draft" data-action="draft">💾 SAVE DRAFT</button>
+                                <button type="button" class="nav-btn next" data-action="next">NEXT →</button>
+                            </div>
+                        </div>
+
+                        <!-- SECTION 10: Summary & Signatures -->
+                        <div class="form-section" id="section10">
+                            <div class="section-header">
+                                <div class="section-number">SECTION 10 OF 10</div>
+                                <div class="section-title">SUMMARY & SIGNATURES</div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Facility Photo</label>
+                                <div class="photo-capture">
+                                    <input type="file" id="photoInput" accept="image/*" capture="environment" style="display: none;">
+                                    <img id="photoPreview" class="photo-preview" alt="Facility Photo">
+                                    <div class="photo-actions">
+                                        <button type="button" class="photo-btn capture" id="capturePhotoBtn">📷 Take Photo</button>
+                                        <button type="button" class="photo-btn delete" id="deletePhotoBtn">🗑️ Delete</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Overall Comments</label>
+                                <textarea class="form-textarea" name="overallComments" placeholder="Enter any final observations or recommendations..."></textarea>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label required">Overall Score (1-5)</label>
+                                <select class="form-select" name="overallScore" required>
+                                    <option value="">-- Select Score --</option>
+                                    <option value="1">1 - Very Poor</option>
+                                    <option value="2">2 - Poor</option>
+                                    <option value="3">3 - Average</option>
+                                    <option value="4">4 - Good</option>
+                                    <option value="5">5 - Excellent</option>
+                                </select>
+                            </div>
+
+                            <div class="staff-entry">
+                                <h4>Facility In-Charge Acknowledgement</h4>
+                                <div class="entry-grid">
+                                    <div class="form-group">
+                                        <label class="form-label required">Name</label>
+                                        <input type="text" class="form-input" name="inChargeName" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label class="form-label">Designation</label>
+                                        <input type="text" class="form-input" name="inChargeDesignation">
+                                    </div>
+                                </div>
+                                <div class="signature-container">
+                                    <label class="form-label">Signature</label>
+                                    <div class="signature-pad-wrapper">
+                                        <canvas id="staffSignature" class="signature-pad"></canvas>
+                                    </div>
+                                    <div class="signature-actions">
+                                        <button type="button" class="signature-btn clear" onclick="clearSignature('staffSignature', 'staff')">Clear</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="supervisor-entry">
+                                <h4>Lead Supervisor Signature</h4>
+                                <div class="signature-container">
+                                    <label class="form-label">Signature</label>
+                                    <div class="signature-pad-wrapper">
+                                        <canvas id="supervisorSignature1" class="signature-pad"></canvas>
+                                    </div>
+                                    <div class="signature-actions">
+                                        <button type="button" class="signature-btn clear" onclick="clearSignature('supervisorSignature1', 'supervisor1')">Clear</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="nav-buttons">
+                                <button type="button" class="nav-btn back" data-action="back">← BACK</button>
+                                <button type="button" class="nav-btn draft" data-action="draft">💾 SAVE DRAFT</button>
+                                <button type="button" class="nav-btn finalize" data-action="finalize">✓ FINALIZE</button>
+                                <button type="button" class="nav-btn submit" data-action="submit">📤 SUBMIT</button>
+                            </div>
+                        </div>
                     </form>
                 </div>
             </div>
 
             <!-- FOOTER -->
             <div class="page-footer">
-                <p style="margin: 0;">Comprehensive Malaria Supportive Supervision Checklist</p>
+                <p>Malaria Supportive Supervision Checklist</p>
                 <p>National Malaria Control Programme - Sierra Leone</p>
-                <p style="font-size: 11px;">Ministry of Health and Sanitation</p>
-                <p style="font-size: 10px;">© 2025 NMCP Sierra Leone</p>
+                <p style="font-size: 10px;">Ministry of Health and Sanitation © 2025</p>
             </div>
         </div>
     </div>
@@ -75,9 +842,9 @@
         <div class="modal-content">
             <div class="modal-header">
                 <span class="modal-title">📝 SAVED DRAFTS</span>
-                <button class="modal-close" onclick="closeDraftsModal()">&times;</button>
+                <button class="modal-close" id="closeDraftsModal">&times;</button>
             </div>
-            <div class="modal-body" id="draftsModalBody"></div>
+            <div class="modal-body" id="draftsList"></div>
         </div>
     </div>
 
@@ -89,34 +856,28 @@
             </div>
             <div class="draft-name-body">
                 <label class="draft-name-label">ENTER A NAME FOR THIS DRAFT:</label>
-                <input type="text" class="draft-name-input" id="draftNameInput" placeholder="e.g., PHU Supervision - January 2025">
+                <input type="text" class="draft-name-input" id="draftNameInput" placeholder="e.g., Facility Name - Date">
                 <div class="draft-name-buttons">
-                    <button class="draft-name-btn cancel" onclick="cancelDraftName()">CANCEL</button>
-                    <button class="draft-name-btn save" onclick="confirmSaveDraft()">SAVE DRAFT</button>
+                    <button class="draft-name-btn cancel" id="cancelDraftBtn">CANCEL</button>
+                    <button class="draft-name-btn save" id="saveDraftBtn">SAVE DRAFT</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- ANALYSIS DASHBOARD MODAL -->
+    <!-- ANALYSIS MODAL -->
     <div class="analysis-modal" id="analysisModal">
         <div class="analysis-content">
             <div class="analysis-header">
-                <span class="analysis-title">📈 SUPERVISION ANALYSIS DASHBOARD</span>
-                <button class="analysis-close" onclick="closeAnalysisModal()">&times;</button>
+                <span class="analysis-title">📈 ANALYSIS DASHBOARD</span>
+                <button class="analysis-close" id="closeAnalysisModal">&times;</button>
             </div>
-            <div class="analysis-body" id="analysisBody">
-                <div class="analysis-loading">
-                    <p>Loading analysis data...</p>
-                </div>
-            </div>
+            <div class="analysis-body" id="analysisBody"></div>
         </div>
     </div>
 
     <!-- NOTIFICATION -->
-    <div class="notification" id="notification">
-        <span class="notification-text" id="notificationText"></span>
-    </div>
+    <div class="notification" id="notification"></div>
 
     <script src="script.js"></script>
 </body>
