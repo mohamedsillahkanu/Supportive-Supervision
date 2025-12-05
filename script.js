@@ -9,10 +9,13 @@ const CONFIG = {
     TOTAL_SECTIONS: 10
 };
 
-// ===== FLAT DATA FORMAT - PIPE DELIMITED =====
-// Format: Parent||Child or Parent||Child||UID (for facilities)
-
-const REGION_DISTRICT_DATA = [
+// ===== SINGLE FLAT DATA ARRAY =====
+// Format: Region||District
+// Format: District||Chiefdom
+// Format: Chiefdom||Facility
+// Format: Facility||UID
+const HIERARCHY_DATA = [
+    // Region to District
     'Eastern Region||Kailahun District',
     'Eastern Region||Kenema District',
     'Eastern Region||Kono District',
@@ -28,92 +31,98 @@ const REGION_DISTRICT_DATA = [
     'Southern Region||Moyamba District',
     'Southern Region||Pujehun District',
     'Western Area||Western Area Rural District',
-    'Western Area||Western Area Urban District'
-];
-
-const DISTRICT_CHIEFDOM_DATA = [
+    'Western Area||Western Area Urban District',
+    // District to Chiefdom (Bo District example)
     'Bo District||Badjia Chiefdom',
     'Bo District||Bagbwe Chiefdom',
     'Bo District||Baoma Chiefdom',
     'Bo District||Bargbo Chiefdom',
     'Bo District||Bo City',
-    'Bo District||Bongor Chiefdom',
-    'Bo District||Bumpe Ngao Chiefdom',
-    'Bo District||Gbo Chiefdom',
-    'Bo District||Jaiama Chiefdom',
-    'Bo District||Kakua Chiefdom',
-    'Bo District||Komboya Chiefdom',
-    'Bo District||Lugbu Chiefdom',
-    'Bo District||Niawa Lenga Chiefdom',
-    'Bo District||Selenga Chiefdom',
-    'Bo District||Tikonko Chiefdom',
-    'Bo District||Valunia Chiefdom',
-    'Bo District||Wonde Chiefdom',
     // Add more district-chiefdom mappings here...
-];
-
-const CHIEFDOM_FACILITY_DATA = [
-    'Badjia Chiefdom||Ngelehun (Badjia) CHC||xxAfuLUYASs',
-    'Badjia Chiefdom||Njagbahun (Badjia) MCHP||cOJo1p4XAxY',
-    'Badjia Chiefdom||Njandama MCHP||gHahSf0ocWN',
-    'Bagbwe Chiefdom||Barlie MCHP||AXDmrJDUPHu',
-    'Bagbwe Chiefdom||Benduma (Bagbwe) MCHP||HOJJW4KMJ40',
-    'Bagbwe Chiefdom||Kondiama MCHP||d5zcRw5mpNg',
-    'Bagbwe Chiefdom||Kpetema (Bagbwe) MCHP||NTDg30BR5aE',
-    'Bagbwe Chiefdom||Mendewa MCHP||E0Nx6sv2jQl',
-    'Bagbwe Chiefdom||Ngalu CHC||AAucxqkPCCs',
-    'Bagbwe Chiefdom||Samie Buma MCHP||PbAKKoY2Xn2',
+    // Chiefdom to Facility
+    'Badjia Chiefdom||Ngelehun (Badjia) CHC',
+    'Badjia Chiefdom||Njagbahun (Badjia) MCHP',
+    'Badjia Chiefdom||Njandama MCHP',
+    'Bagbwe Chiefdom||Barlie MCHP',
+    'Bagbwe Chiefdom||Benduma (Bagbwe) MCHP',
+    'Bagbwe Chiefdom||Kondiama MCHP',
     // Add more chiefdom-facility mappings here...
+    // Facility to UID
+    'Ngelehun (Badjia) CHC||xxAfuLUYASs',
+    'Njagbahun (Badjia) MCHP||cOJo1p4XAxY',
+    'Njandama MCHP||gHahSf0ocWN',
+    'Barlie MCHP||AXDmrJDUPHu',
+    'Benduma (Bagbwe) MCHP||HOJJW4KMJ40',
+    'Kondiama MCHP||d5zcRw5mpNg',
+    // Add more facility-UID mappings here...
 ];
 
-// ===== HELPER FUNCTIONS TO PARSE FLAT DATA =====
-function parseRegionDistrictData() {
-    const map = {};
-    REGION_DISTRICT_DATA.forEach(line => {
-        const [region, district] = line.split('||');
-        if (!map[region]) {
-            map[region] = [];
-        }
-        map[region].push(district);
-    });
-    return map;
-}
+// ===== PARSE SINGLE ARRAY INTO MAPS =====
+const REGION_DISTRICT_MAP = {};
+const DISTRICT_CHIEFDOM_MAP = {};
+const CHIEFDOM_FACILITY_MAP = {};
+const FACILITY_UID_MAP = {};
 
-function parseDistrictChiefdomData() {
-    const map = {};
-    DISTRICT_CHIEFDOM_DATA.forEach(line => {
-        const [district, chiefdom] = line.split('||');
-        if (!map[district]) {
-            map[district] = [];
-        }
-        map[district].push(chiefdom);
-    });
-    return map;
-}
-
-function parseChiefdomFacilityData() {
-    const map = {};
-    CHIEFDOM_FACILITY_DATA.forEach(line => {
+function parseHierarchyData() {
+    // First pass: collect all known entities
+    const districts = new Set();
+    const chiefdoms = new Set();
+    const facilities = new Set();
+    
+    // Identify regions, districts, chiefdoms by patterns
+    HIERARCHY_DATA.forEach(line => {
         const parts = line.split('||');
-        const chiefdom = parts[0];
-        const facilityName = parts[1];
-        const facilityUid = parts[2] || '';
+        if (parts.length !== 2) return;
         
-        if (!map[chiefdom]) {
-            map[chiefdom] = [];
+        const parent = parts[0].trim();
+        const child = parts[1].trim();
+        
+        // Region -> District (parent contains "Region" or is "Western Area")
+        if (parent.includes('Region') || parent === 'Western Area') {
+            districts.add(child);
         }
-        map[chiefdom].push({
-            name: facilityName,
-            uid: facilityUid
-        });
+        // District -> Chiefdom (parent ends with "District")
+        else if (parent.endsWith('District')) {
+            chiefdoms.add(child);
+        }
+        // Chiefdom -> Facility (parent ends with "Chiefdom" or "City")
+        else if (parent.endsWith('Chiefdom') || parent.endsWith('City')) {
+            facilities.add(child);
+        }
     });
-    return map;
+    
+    // Second pass: build maps
+    HIERARCHY_DATA.forEach(line => {
+        const parts = line.split('||');
+        if (parts.length !== 2) return;
+        
+        const parent = parts[0].trim();
+        const child = parts[1].trim();
+        
+        // Region -> District
+        if (parent.includes('Region') || parent === 'Western Area') {
+            if (!REGION_DISTRICT_MAP[parent]) REGION_DISTRICT_MAP[parent] = [];
+            REGION_DISTRICT_MAP[parent].push(child);
+        }
+        // District -> Chiefdom
+        else if (parent.endsWith('District')) {
+            if (!DISTRICT_CHIEFDOM_MAP[parent]) DISTRICT_CHIEFDOM_MAP[parent] = [];
+            DISTRICT_CHIEFDOM_MAP[parent].push(child);
+        }
+        // Chiefdom -> Facility
+        else if (parent.endsWith('Chiefdom') || parent.endsWith('City')) {
+            if (!CHIEFDOM_FACILITY_MAP[parent]) CHIEFDOM_FACILITY_MAP[parent] = [];
+            CHIEFDOM_FACILITY_MAP[parent].push(child);
+        }
+        // Facility -> UID (facility is in facilities set)
+        else if (facilities.has(parent)) {
+            FACILITY_UID_MAP[parent] = child;
+        }
+    });
 }
 
-// ===== BUILD MAPS ON LOAD =====
-const REGION_DISTRICT_MAP = parseRegionDistrictData();
-const DISTRICT_CHIEFDOM_MAP = parseDistrictChiefdomData();
-const CHIEFDOM_FACILITY_MAP = parseChiefdomFacilityData();
+// Initialize on load
+parseHierarchyData();
 
 // ===== APPLICATION STATE =====
 let currentSection = 1;
@@ -157,36 +166,25 @@ function initializeApp() {
 
 // ===== EVENT LISTENERS =====
 function setupEventListeners() {
-    // Login form
     document.getElementById('loginForm').addEventListener('submit', handleLogin);
-    
-    // Region/District/Chiefdom/Facility cascading
     document.getElementById('region').addEventListener('change', handleRegionChange);
     document.getElementById('district').addEventListener('change', handleDistrictChange);
     document.getElementById('chiefdom').addEventListener('change', handleChiefdomChange);
+    document.getElementById('facilityName').addEventListener('change', handleFacilityChange);
     
-    // Navigation buttons
     document.querySelectorAll('.nav-btn').forEach(btn => {
         btn.addEventListener('click', handleNavigation);
     });
     
-    // Control buttons
     document.getElementById('newFormBtn').addEventListener('click', startNewForm);
     document.getElementById('viewDraftsBtn').addEventListener('click', openDraftsModal);
     document.getElementById('viewAnalysisBtn').addEventListener('click', openAnalysisModal);
-    
-    // Photo capture
     document.getElementById('photoInput').addEventListener('change', handlePhotoCapture);
     document.getElementById('capturePhotoBtn').addEventListener('click', () => document.getElementById('photoInput').click());
     document.getElementById('deletePhotoBtn').addEventListener('click', deletePhoto);
-    
-    // GPS refresh
     document.getElementById('refreshGpsBtn').addEventListener('click', requestGPSCoordinates);
     
-    // Conditional fields
     setupConditionalFields();
-    
-    // Form input changes for auto-save
     supervisionForm.addEventListener('change', debounce(autoSaveDraft, 2000));
     supervisionForm.addEventListener('input', debounce(autoSaveDraft, 5000));
 }
@@ -227,11 +225,9 @@ function handleRegionChange(e) {
     const chiefdomSelect = document.getElementById('chiefdom');
     const facilitySelect = document.getElementById('facilityName');
     
-    // Reset dependent dropdowns
     districtSelect.innerHTML = '<option value="">-- Select District --</option>';
     chiefdomSelect.innerHTML = '<option value="">-- Select Chiefdom --</option>';
     facilitySelect.innerHTML = '<option value="">-- Select Health Facility --</option>';
-    
     document.getElementById('facilityId').value = '';
     
     if (region && REGION_DISTRICT_MAP[region]) {
@@ -249,7 +245,6 @@ function handleDistrictChange(e) {
     const chiefdomSelect = document.getElementById('chiefdom');
     const facilitySelect = document.getElementById('facilityName');
     
-    // Reset dependent dropdowns
     chiefdomSelect.innerHTML = '<option value="">-- Select Chiefdom --</option>';
     facilitySelect.innerHTML = '<option value="">-- Select Health Facility --</option>';
     document.getElementById('facilityId').value = '';
@@ -268,27 +263,23 @@ function handleChiefdomChange(e) {
     const chiefdom = e.target.value;
     const facilitySelect = document.getElementById('facilityName');
     
-    // Reset facility dropdown
     facilitySelect.innerHTML = '<option value="">-- Select Health Facility --</option>';
     document.getElementById('facilityId').value = '';
     
     if (chiefdom && CHIEFDOM_FACILITY_MAP[chiefdom]) {
         CHIEFDOM_FACILITY_MAP[chiefdom].forEach(facility => {
             const option = document.createElement('option');
-            option.value = facility.name;
-            option.textContent = facility.name;
-            option.dataset.uid = facility.uid;
+            option.value = facility;
+            option.textContent = facility;
             facilitySelect.appendChild(option);
         });
     }
-    
-    // Add event listener for facility selection
-    facilitySelect.addEventListener('change', function() {
-        const selectedOption = this.options[this.selectedIndex];
-        if (selectedOption && selectedOption.dataset.uid) {
-            document.getElementById('facilityId').value = selectedOption.dataset.uid;
-        }
-    });
+}
+
+function handleFacilityChange(e) {
+    const facility = e.target.value;
+    const uid = FACILITY_UID_MAP[facility] || '';
+    document.getElementById('facilityId').value = uid;
 }
 
 // ===== NAVIGATION =====
@@ -297,15 +288,11 @@ function handleNavigation(e) {
     
     switch(action) {
         case 'back':
-            if (currentSection > 1) {
-                goToSection(currentSection - 1);
-            }
+            if (currentSection > 1) goToSection(currentSection - 1);
             break;
         case 'next':
-            if (validateCurrentSection()) {
-                if (currentSection < CONFIG.TOTAL_SECTIONS) {
-                    goToSection(currentSection + 1);
-                }
+            if (validateCurrentSection() && currentSection < CONFIG.TOTAL_SECTIONS) {
+                goToSection(currentSection + 1);
             }
             break;
         case 'draft':
@@ -321,19 +308,15 @@ function handleNavigation(e) {
 }
 
 function goToSection(sectionNum) {
-    // Hide all sections
     document.querySelectorAll('.form-section').forEach(section => {
         section.classList.remove('active');
     });
     
-    // Show target section
     const targetSection = document.getElementById(`section${sectionNum}`);
     if (targetSection) {
         targetSection.classList.add('active');
         currentSection = sectionNum;
         updateProgress();
-        
-        // Scroll to top of form
         document.querySelector('.form-content').scrollIntoView({ behavior: 'smooth' });
     }
 }
@@ -343,7 +326,6 @@ function updateProgress() {
     progressFill.style.width = `${progress}%`;
     progressText.textContent = `Section ${currentSection} of ${CONFIG.TOTAL_SECTIONS}`;
     
-    // Update form status badge
     if (isDraft) {
         formStatusBadge.textContent = 'DRAFT';
         formStatusBadge.className = 'draft';
@@ -371,28 +353,22 @@ function validateCurrentSection() {
     if (!isValid) {
         showNotification('Please fill in all required fields before proceeding.', 'error');
     }
-    
     return isValid;
 }
 
 function validateEntireForm() {
     let isValid = true;
-    
     for (let i = 1; i <= CONFIG.TOTAL_SECTIONS; i++) {
         const sectionEl = document.getElementById(`section${i}`);
         const requiredFields = sectionEl.querySelectorAll('[required]');
-        
         requiredFields.forEach(field => {
-            if (!field.value.trim()) {
-                isValid = false;
-            }
+            if (!field.value.trim()) isValid = false;
         });
     }
-    
     return isValid;
 }
 
-// ===== FORM DATA COLLECTION =====
+// ===== FORM DATA =====
 function collectFormData() {
     const formElements = supervisionForm.elements;
     const data = {
@@ -409,43 +385,33 @@ function collectFormData() {
         const element = formElements[i];
         if (element.name) {
             if (element.type === 'checkbox') {
-                if (!data.sections[element.name]) {
-                    data.sections[element.name] = [];
-                }
-                if (element.checked) {
-                    data.sections[element.name].push(element.value);
-                }
+                if (!data.sections[element.name]) data.sections[element.name] = [];
+                if (element.checked) data.sections[element.name].push(element.value);
             } else if (element.type === 'radio') {
-                if (element.checked) {
-                    data.sections[element.name] = element.value;
-                }
+                if (element.checked) data.sections[element.name] = element.value;
             } else {
                 data.sections[element.name] = element.value;
             }
         }
     }
-    
     return data;
 }
 
 function loadFormData(data) {
     if (!data) return;
     
-    // Load GPS and photo
     gpsCoordinates = data.gpsCoordinates;
     facilityPhoto = data.facilityPhoto;
     supervisorSignatures = data.supervisorSignatures || {};
     staffSignature = data.staffSignature;
     isDraft = data.isDraft !== false;
     
-    // Update GPS display
     if (gpsCoordinates) {
         document.getElementById('gpsLatitude').textContent = gpsCoordinates.latitude.toFixed(6);
         document.getElementById('gpsLongitude').textContent = gpsCoordinates.longitude.toFixed(6);
         document.getElementById('gpsAccuracy').textContent = gpsCoordinates.accuracy.toFixed(2);
     }
     
-    // Update photo display
     if (facilityPhoto) {
         const photoPreview = document.getElementById('photoPreview');
         photoPreview.src = facilityPhoto;
@@ -453,7 +419,6 @@ function loadFormData(data) {
         document.getElementById('deletePhotoBtn').classList.add('show');
     }
     
-    // Load form fields
     if (data.sections) {
         Object.keys(data.sections).forEach(key => {
             const element = document.querySelector(`[name="${key}"]`);
@@ -469,44 +434,31 @@ function loadFormData(data) {
                     });
                 } else {
                     element.value = data.sections[key];
-                    // Trigger change event for cascading dropdowns
-                    if (element.tagName === 'SELECT') {
-                        element.dispatchEvent(new Event('change'));
-                    }
+                    if (element.tagName === 'SELECT') element.dispatchEvent(new Event('change'));
                 }
             }
         });
     }
-    
     updateProgress();
 }
 
 // ===== DRAFT MANAGEMENT =====
-function saveDraft() {
-    openDraftNameModal();
-}
+function saveDraft() { openDraftNameModal(); }
 
 function openDraftNameModal() {
     const modal = document.getElementById('draftNameModal');
     const input = document.getElementById('draftNameInput');
-    
-    // Generate default name
     const facilityName = document.getElementById('facilityName').value || 'Unnamed Facility';
     const date = new Date().toLocaleDateString();
     input.value = `${facilityName} - ${date}`;
-    
     modal.classList.add('show');
     
-    // Setup event listeners
     document.getElementById('saveDraftBtn').onclick = () => {
         const draftName = input.value.trim() || `Draft ${Date.now()}`;
         saveDraftWithName(draftName);
         modal.classList.remove('show');
     };
-    
-    document.getElementById('cancelDraftBtn').onclick = () => {
-        modal.classList.remove('show');
-    };
+    document.getElementById('cancelDraftBtn').onclick = () => modal.classList.remove('show');
 }
 
 function saveDraftWithName(name) {
@@ -514,23 +466,15 @@ function saveDraftWithName(name) {
     data.draftName = name;
     data.draftId = currentDraftId || `draft_${Date.now()}`;
     data.savedAt = new Date().toISOString();
-    
     currentDraftId = data.draftId;
     
-    // Get existing drafts
     const drafts = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY_DRAFTS) || '[]');
-    
-    // Update or add draft
     const existingIndex = drafts.findIndex(d => d.draftId === data.draftId);
-    if (existingIndex >= 0) {
-        drafts[existingIndex] = data;
-    } else {
-        drafts.push(data);
-    }
+    if (existingIndex >= 0) drafts[existingIndex] = data;
+    else drafts.push(data);
     
     localStorage.setItem(CONFIG.STORAGE_KEY_DRAFTS, JSON.stringify(drafts));
     updateDraftCount();
-    
     showNotification(`Draft "${name}" saved successfully!`, 'success');
 }
 
@@ -554,7 +498,6 @@ function autoSaveDraft() {
 function loadDraft(draftId) {
     const drafts = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY_DRAFTS) || '[]');
     const draft = drafts.find(d => d.draftId === draftId);
-    
     if (draft) {
         currentDraftId = draftId;
         loadFormData(draft);
@@ -579,13 +522,10 @@ function openDraftsModal() {
     const modal = document.getElementById('draftsModal');
     modal.classList.add('show');
     renderDraftsList();
-    
     document.getElementById('closeDraftsModal').onclick = closeDraftsModal;
 }
 
-function closeDraftsModal() {
-    document.getElementById('draftsModal').classList.remove('show');
-}
+function closeDraftsModal() { document.getElementById('draftsModal').classList.remove('show'); }
 
 function renderDraftsList() {
     const container = document.getElementById('draftsList');
@@ -623,8 +563,7 @@ function finalizeForm() {
         showNotification('Please complete all required fields before finalizing.', 'error');
         return;
     }
-    
-    if (confirm('Are you sure you want to finalize this form? You will not be able to edit it after finalizing.')) {
+    if (confirm('Are you sure you want to finalize this form?')) {
         isDraft = false;
         updateProgress();
         showNotification('Form finalized! You can now submit it.', 'success');
@@ -636,36 +575,26 @@ function submitForm() {
         showNotification('Please finalize the form before submitting.', 'warning');
         return;
     }
-    
     const data = collectFormData();
-    
-    if (isOnline) {
-        submitToServer(data);
-    } else {
-        saveForLaterSubmission(data);
-    }
+    if (isOnline) submitToServer(data);
+    else saveForLaterSubmission(data);
 }
 
 function submitToServer(data) {
     showNotification('Submitting form...', 'warning');
-    
     fetch(CONFIG.SCRIPT_URL, {
         method: 'POST',
         mode: 'no-cors',
-        headers: {
-            'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
     })
     .then(() => {
-        // Remove from drafts if it was a draft
         if (currentDraftId) {
             const drafts = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY_DRAFTS) || '[]');
             const filtered = drafts.filter(d => d.draftId !== currentDraftId);
             localStorage.setItem(CONFIG.STORAGE_KEY_DRAFTS, JSON.stringify(filtered));
             updateDraftCount();
         }
-        
         showNotification('Form submitted successfully!', 'success');
         startNewForm();
     })
@@ -682,14 +611,12 @@ function saveForLaterSubmission(data) {
     localStorage.setItem(CONFIG.STORAGE_KEY_PENDING, JSON.stringify(pending));
     updatePendingCount();
     
-    // Remove from drafts if it was a draft
     if (currentDraftId) {
         const drafts = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY_DRAFTS) || '[]');
         const filtered = drafts.filter(d => d.draftId !== currentDraftId);
         localStorage.setItem(CONFIG.STORAGE_KEY_DRAFTS, JSON.stringify(filtered));
         updateDraftCount();
     }
-    
     showNotification('Form saved for submission when online.', 'warning');
     startNewForm();
 }
@@ -701,17 +628,14 @@ function updatePendingCount() {
 
 function syncPendingSubmissions() {
     if (!isOnline) return;
-    
     const pending = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEY_PENDING) || '[]');
     if (pending.length === 0) return;
     
-    pending.forEach((data, index) => {
+    pending.forEach((data) => {
         fetch(CONFIG.SCRIPT_URL, {
             method: 'POST',
             mode: 'no-cors',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
         })
         .then(() => {
@@ -720,9 +644,7 @@ function syncPendingSubmissions() {
             localStorage.setItem(CONFIG.STORAGE_KEY_PENDING, JSON.stringify(filtered));
             updatePendingCount();
         })
-        .catch(error => {
-            console.error('Sync error:', error);
-        });
+        .catch(error => console.error('Sync error:', error));
     });
 }
 
@@ -738,24 +660,18 @@ function startNewForm() {
         supervisorSignatures = {};
         staffSignature = null;
         
-        // Clear photo preview
         const photoPreview = document.getElementById('photoPreview');
         photoPreview.src = '';
         photoPreview.classList.remove('show');
         document.getElementById('deletePhotoBtn').classList.remove('show');
         
-        // Clear GPS display
         document.getElementById('gpsLatitude').textContent = '--';
         document.getElementById('gpsLongitude').textContent = '--';
         document.getElementById('gpsAccuracy').textContent = '--';
         
-        // Clear signatures
         clearAllSignatures();
-        
-        // Go to first section
         goToSection(1);
         requestGPSCoordinates();
-        
         showNotification('New form started!', 'success');
     }
 }
@@ -779,45 +695,29 @@ function requestGPSCoordinates() {
                 accuracy: position.coords.accuracy,
                 timestamp: new Date().toISOString()
             };
-            
             document.getElementById('gpsLatitude').textContent = gpsCoordinates.latitude.toFixed(6);
             document.getElementById('gpsLongitude').textContent = gpsCoordinates.longitude.toFixed(6);
             document.getElementById('gpsAccuracy').textContent = gpsCoordinates.accuracy.toFixed(2) + ' m';
-            
             showNotification('GPS coordinates captured!', 'success');
         },
         (error) => {
             document.getElementById('gpsLatitude').textContent = 'Error';
             document.getElementById('gpsLongitude').textContent = 'Error';
             document.getElementById('gpsAccuracy').textContent = 'Error';
-            
             let errorMsg = 'Unable to get GPS coordinates.';
-            switch(error.code) {
-                case error.PERMISSION_DENIED:
-                    errorMsg = 'GPS permission denied. Please enable location access.';
-                    break;
-                case error.POSITION_UNAVAILABLE:
-                    errorMsg = 'Location information unavailable.';
-                    break;
-                case error.TIMEOUT:
-                    errorMsg = 'GPS request timed out. Please try again.';
-                    break;
-            }
+            if (error.code === error.PERMISSION_DENIED) errorMsg = 'GPS permission denied.';
+            else if (error.code === error.POSITION_UNAVAILABLE) errorMsg = 'Location unavailable.';
+            else if (error.code === error.TIMEOUT) errorMsg = 'GPS request timed out.';
             showNotification(errorMsg, 'error');
         },
-        {
-            enableHighAccuracy: true,
-            timeout: 30000,
-            maximumAge: 60000
-        }
+        { enableHighAccuracy: true, timeout: 30000, maximumAge: 60000 }
     );
 }
 
-// ===== PHOTO CAPTURE =====
+// ===== PHOTO =====
 function handlePhotoCapture(e) {
     const file = e.target.files[0];
     if (!file) return;
-    
     const reader = new FileReader();
     reader.onload = function(event) {
         facilityPhoto = event.target.result;
@@ -842,83 +742,53 @@ function deletePhoto() {
     }
 }
 
-// ===== SIGNATURE PADS =====
+// ===== SIGNATURES =====
 function initializeSignaturePads() {
-    // Initialize supervisor signature pads
     for (let i = 1; i <= 4; i++) {
         const canvas = document.getElementById(`supervisorSignature${i}`);
-        if (canvas) {
-            setupSignaturePad(canvas, `supervisor${i}`);
-        }
+        if (canvas) setupSignaturePad(canvas, `supervisor${i}`);
     }
-    
-    // Initialize staff signature pad
     const staffCanvas = document.getElementById('staffSignature');
-    if (staffCanvas) {
-        setupSignaturePad(staffCanvas, 'staff');
-    }
+    if (staffCanvas) setupSignaturePad(staffCanvas, 'staff');
 }
 
 function setupSignaturePad(canvas, id) {
     const ctx = canvas.getContext('2d');
-    let isDrawing = false;
-    let lastX = 0;
-    let lastY = 0;
+    let isDrawing = false, lastX = 0, lastY = 0;
     
-    // Set canvas size
     canvas.width = canvas.offsetWidth;
     canvas.height = canvas.offsetHeight;
-    
-    // Clear canvas
     ctx.fillStyle = 'white';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
     function getCoords(e) {
         const rect = canvas.getBoundingClientRect();
-        const x = (e.clientX || e.touches[0].clientX) - rect.left;
-        const y = (e.clientY || e.touches[0].clientY) - rect.top;
-        return { x, y };
+        return {
+            x: (e.clientX || e.touches[0].clientX) - rect.left,
+            y: (e.clientY || e.touches[0].clientY) - rect.top
+        };
     }
     
-    function startDrawing(e) {
-        isDrawing = true;
-        const coords = getCoords(e);
-        lastX = coords.x;
-        lastY = coords.y;
-    }
-    
+    function startDrawing(e) { isDrawing = true; const c = getCoords(e); lastX = c.x; lastY = c.y; }
     function draw(e) {
         if (!isDrawing) return;
         e.preventDefault();
-        
-        const coords = getCoords(e);
-        
+        const c = getCoords(e);
         ctx.beginPath();
         ctx.moveTo(lastX, lastY);
-        ctx.lineTo(coords.x, coords.y);
+        ctx.lineTo(c.x, c.y);
         ctx.strokeStyle = '#000';
         ctx.lineWidth = 2;
         ctx.lineCap = 'round';
         ctx.stroke();
-        
-        lastX = coords.x;
-        lastY = coords.y;
+        lastX = c.x; lastY = c.y;
     }
+    function stopDrawing() { if (isDrawing) { isDrawing = false; saveSignature(canvas, id); } }
     
-    function stopDrawing() {
-        if (isDrawing) {
-            isDrawing = false;
-            saveSignature(canvas, id);
-        }
-    }
-    
-    // Mouse events
     canvas.addEventListener('mousedown', startDrawing);
     canvas.addEventListener('mousemove', draw);
     canvas.addEventListener('mouseup', stopDrawing);
     canvas.addEventListener('mouseout', stopDrawing);
-    
-    // Touch events
     canvas.addEventListener('touchstart', startDrawing);
     canvas.addEventListener('touchmove', draw);
     canvas.addEventListener('touchend', stopDrawing);
@@ -926,11 +796,8 @@ function setupSignaturePad(canvas, id) {
 
 function saveSignature(canvas, id) {
     const dataUrl = canvas.toDataURL('image/png');
-    if (id === 'staff') {
-        staffSignature = dataUrl;
-    } else {
-        supervisorSignatures[id] = dataUrl;
-    }
+    if (id === 'staff') staffSignature = dataUrl;
+    else supervisorSignatures[id] = dataUrl;
 }
 
 function clearSignature(canvasId, signatureId) {
@@ -938,53 +805,35 @@ function clearSignature(canvasId, signatureId) {
     const ctx = canvas.getContext('2d');
     ctx.fillStyle = 'white';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
-    if (signatureId === 'staff') {
-        staffSignature = null;
-    } else {
-        delete supervisorSignatures[signatureId];
-    }
+    if (signatureId === 'staff') staffSignature = null;
+    else delete supervisorSignatures[signatureId];
 }
 
 function clearAllSignatures() {
     for (let i = 1; i <= 4; i++) {
         const canvas = document.getElementById(`supervisorSignature${i}`);
-        if (canvas) {
-            const ctx = canvas.getContext('2d');
-            ctx.fillStyle = 'white';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-        }
+        if (canvas) { const ctx = canvas.getContext('2d'); ctx.fillStyle = 'white'; ctx.fillRect(0, 0, canvas.width, canvas.height); }
     }
-    
     const staffCanvas = document.getElementById('staffSignature');
-    if (staffCanvas) {
-        const ctx = staffCanvas.getContext('2d');
-        ctx.fillStyle = 'white';
-        ctx.fillRect(0, 0, staffCanvas.width, staffCanvas.height);
-    }
-    
+    if (staffCanvas) { const ctx = staffCanvas.getContext('2d'); ctx.fillStyle = 'white'; ctx.fillRect(0, 0, staffCanvas.width, staffCanvas.height); }
     supervisorSignatures = {};
     staffSignature = null;
 }
 
 // ===== CONDITIONAL FIELDS =====
 function setupConditionalFields() {
-    // Example: Show additional field when "No" is selected
     document.querySelectorAll('input[type="radio"]').forEach(radio => {
         radio.addEventListener('change', function() {
             const conditionalField = document.getElementById(`${this.name}Conditional`);
             if (conditionalField) {
-                if (this.value === 'No' || this.value === 'no') {
-                    conditionalField.classList.add('show');
-                } else {
-                    conditionalField.classList.remove('show');
-                }
+                if (this.value === 'No' || this.value === 'no') conditionalField.classList.add('show');
+                else conditionalField.classList.remove('show');
             }
         });
     });
 }
 
-// ===== ONLINE/OFFLINE DETECTION =====
+// ===== ONLINE/OFFLINE =====
 function setupOnlineOfflineDetection() {
     window.addEventListener('online', () => {
         isOnline = true;
@@ -992,11 +841,10 @@ function setupOnlineOfflineDetection() {
         syncPendingSubmissions();
         showNotification('You are now online!', 'success');
     });
-    
     window.addEventListener('offline', () => {
         isOnline = false;
         updateStatusDisplay();
-        showNotification('You are now offline. Data will be saved locally.', 'warning');
+        showNotification('You are now offline.', 'warning');
     });
 }
 
@@ -1014,44 +862,26 @@ function updateStatusDisplay() {
 function openAnalysisModal() {
     const modal = document.getElementById('analysisModal');
     modal.classList.add('show');
-    
-    document.getElementById('closeAnalysisModal').onclick = () => {
-        modal.classList.remove('show');
-    };
-    
-    // Load analysis data (placeholder)
-    document.getElementById('analysisBody').innerHTML = `
-        <div class="analysis-loading">
-            <p>Analysis feature coming soon!</p>
-            <p>This will display charts and statistics from your submitted supervision data.</p>
-        </div>
-    `;
+    document.getElementById('closeAnalysisModal').onclick = () => modal.classList.remove('show');
+    document.getElementById('analysisBody').innerHTML = `<div class="analysis-loading"><p>Analysis feature coming soon!</p></div>`;
 }
 
-// ===== NOTIFICATIONS =====
+// ===== UTILITIES =====
 function showNotification(message, type = 'info') {
     notification.textContent = message;
     notification.className = `notification ${type} show`;
-    
-    setTimeout(() => {
-        notification.classList.remove('show');
-    }, 3000);
+    setTimeout(() => notification.classList.remove('show'), 3000);
 }
 
-// ===== UTILITY FUNCTIONS =====
 function debounce(func, wait) {
     let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
+    return function(...args) {
         clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
+        timeout = setTimeout(() => func(...args), wait);
     };
 }
 
-// ===== EXPOSE FUNCTIONS GLOBALLY =====
+// ===== GLOBAL EXPORTS =====
 window.loadDraft = loadDraft;
 window.deleteDraft = deleteDraft;
 window.clearSignature = clearSignature;
